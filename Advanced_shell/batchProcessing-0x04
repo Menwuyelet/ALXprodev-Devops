@@ -1,0 +1,31 @@
+#!/bin/bash
+
+POKEMONS=("bulbasaur" "ivysaur" "venusaur" "charmander" "charmeleon")
+BASE_URL="https://pokeapi.co/api/v2/pokemon"
+
+fetch_pokemon() {
+  local name=$1
+  local output_file="${name}.json"
+
+  echo "Fetching data for $name..."
+  RESPONSE_CODE=$(curl -s -o "$output_file" -w "%{http_code}" "$BASE_URL/$name")
+
+  if [ "$RESPONSE_CODE" -ne 200 ]; then
+    echo "Failed to fetch $name (HTTP $RESPONSE_CODE)" >> errors.txt
+    rm -f "$output_file"
+  else
+    echo "Saved $name data to $output_file"
+  fi
+}
+
+export -f fetch_pokemon
+export BASE_URL
+
+for pokemon in "${POKEMONS[@]}"; do
+  fetch_pokemon "$pokemon" &
+done
+
+wait
+
+echo "All Pokémon fetched."
+
