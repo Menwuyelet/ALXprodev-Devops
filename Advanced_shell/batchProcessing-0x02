@@ -1,0 +1,27 @@
+#!/bin/bash
+
+POKEMONS=("Bulbasaur" "Ivysaur" "Venusaur" "Charmander" "Charmeleon")
+
+BASE_URL="https://pokeapi.co/api/v2/pokemon"
+
+DELAY=2
+
+for POKEMON in "${POKEMONS[@]}"; do
+    LOWER_NAME=$(echo "$POKEMON" | tr '[:upper:]' '[:lower:]')
+
+    OUTPUT_FILE="${LOWER_NAME}.json"
+
+    echo "Fetching data for $POKEMON..."
+
+    RESPONSE_CODE=$(curl -s -o "$OUTPUT_FILE" -w "%{http_code}" "$BASE_URL/$LOWER_NAME")
+
+    if [ "$RESPONSE_CODE" -ne 200 ]; then
+        echo "Failed to fetch $POKEMON (HTTP $RESPONSE_CODE)" >> errors.txt
+        rm -f "$OUTPUT_FILE"  # Remove incomplete file
+    else
+        echo "Saved $POKEMON data to $OUTPUT_FILE"
+    fi
+
+    sleep "$DELAY"
+done
+
