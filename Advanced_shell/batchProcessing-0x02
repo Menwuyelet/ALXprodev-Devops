@@ -1,27 +1,37 @@
 #!/bin/bash
 
 POKEMONS=("bulbasaur" "ivysaur" "venusaur" "charmander" "charmeleon")
-
 BASE_URL="https://pokeapi.co/api/v2/pokemon"
-
 DELAY=2
+MAX_RETRIES=3
 
 for POKEMON in "${POKEMONS[@]}"; do
     LOWER_NAME=$(echo "$POKEMON" | tr '[:upper:]' '[:lower:]')
-
     OUTPUT_FILE="${LOWER_NAME}.json"
 
     echo "Fetching data for $POKEMON..."
 
-    RESPONSE_CODE=$(curl -s -o "$OUTPUT_FILE" -w "%{http_code}" "$BASE_URL/$LOWER_NAME")
+    RETRY_COUNT=0
+    SUCCESS=0
 
-    if [ "$RESPONSE_CODE" -ne 200 ]; then
-        echo "Failed to fetch $POKEMON (HTTP $RESPONSE_CODE)" >> errors.txt
-        rm -f "$OUTPUT_FILE"  # Remove incomplete file
-    else
-        echo "Saved $POKEMON data to $OUTPUT_FILE"
+    while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+        RESPONSE_CODE=$(curl -s -o "$OUTPUT_FILE" -w "%{http_code}" "$BASE_URL/$LOWER_NAME")
+
+        if [ "$RESPONSE_CODE" -eq 200 ]; then
+            echo "Saved $POKEMON data to $OUTPUT_FILE"
+            SUCCESS=1
+            break
+        else
+            ((RETRY_COUNT++))
+            echo "Attempt $RETRY_COUNT failed for $POKEMON (HTTP $RESPONSE_CODE). Retrying..."
+            sleep 1  # short wait before retry
+        fi
+    done
+
+    if [ $SUCCESS -eq 0 ]; then
+        echo "Failed to fetch $POKEMON after $MAX_RETRIES attempts (HTTP $RESPONSE_CODE)" >> errors.txt
+        rm -f "$OUTPUT_FILE"
     fi
 
     sleep "$DELAY"
 done
-
