@@ -1,6 +1,6 @@
 #!/bin/bash
 
-POKEMONS=("Bulbasaur" "Ivysaur" "Venusaur" "Charmander" "Charmeleon")
+POKEMONS=("bulbasaur" "ivysaur" "venusaur" "charmander" "charmeleon")
 
 BASE_URL="https://pokeapi.co/api/v2/pokemon"
 
