@@ -3,11 +3,14 @@
 POKEMONS=("bulbasaur" "ivysaur" "venusaur" "charmander" "charmeleon")
 BASE_URL="https://pokeapi.co/api/v2/pokemon"
 
+# Timeout for each fetch in seconds
+TIMEOUT=10
+
 fetch_pokemon() {
   local name=$1
   local output_file="${name}.json"
-
   echo "Fetching data for $name..."
+
   RESPONSE_CODE=$(curl -s -o "$output_file" -w "%{http_code}" "$BASE_URL/$name")
 
   if [ "$RESPONSE_CODE" -ne 200 ]; then
@@ -21,11 +24,33 @@ fetch_pokemon() {
 export -f fetch_pokemon
 export BASE_URL
 
+# Start all fetches in the background, saving their PIDs
+PIDS=()
 for pokemon in "${POKEMONS[@]}"; do
   fetch_pokemon "$pokemon" &
+  PIDS+=($!)
 done
 
+# Show background jobs
+echo "Current background jobs:"
+jobs
+
+# Monitor jobs and kill if running too long
+for pid in "${PIDS[@]}"; do
+  SECONDS=0
+  while kill -0 "$pid" 2>/dev/null; do
+    if [ "$SECONDS" -ge "$TIMEOUT" ]; then
+      echo "Process $pid timed out. Killing..."
+      kill -9 "$pid"
+      break
+    fi
+    sleep 1
+    ((SECONDS++))
+  done
+done
+
+# Wait for all remaining jobs to finish
 wait
 
-echo "All Pokémon fetched."
+echo "All Pokémon fetches complete."
 
