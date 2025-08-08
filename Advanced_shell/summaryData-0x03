@@ -1,0 +1,22 @@
+#!/bin/bash
+
+CSV_FILE="pokemon_report.csv"
+
+echo "Name,Height(m),Weight(kg)" > "$CSV_FILE"
+
+for FILE in *.json; do
+    if [ -f "$FILE" ]; then
+        NAME=$(jq -r '.name' "$FILE" | sed 's/.*/\u&/')
+        HEIGHT=$(jq -r '.height' "$FILE")   # in decimeters
+        WEIGHT=$(jq -r '.weight' "$FILE")   # in hectograms
+
+        HEIGHT_METERS=$(awk -v h="$HEIGHT" 'BEGIN {printf "%.1f", h/10}')
+        WEIGHT_KG=$(awk -v w="$WEIGHT" 'BEGIN {printf "%.1f", w/10}')
+
+        echo "$NAME,$HEIGHT_METERS,$WEIGHT_KG" >> "$CSV_FILE"
+    fi
+done
+
+awk -F, 'NR>1 {total_h+=$2; total_w+=$3; count++} 
+END {print "Average Height(m):", total_h/count; print "Average Weight(kg):", total_w/count}' "$CSV_FILE"
+
